@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineering China 2026 Q1 - Veracity Newsletter</title>
+    <meta name="description" content="Engineering China 2026 Q1 newsletter with futuristic glass navigation and enhanced sci-fi visuals">
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyan: { 400: '#00d9ff', 500: '#00c4e8' },
+                        blue: { 500: '#4687eb', 600: '#3b7ad9' },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    maxWidth: { 'dashboard': '1150px' },
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg: #000000;
+            --beam-top-left: radial-gradient(ellipse at top left, rgba(160, 205, 255, 0.85) 0%, rgba(70, 135, 235, 0.5) 40%, transparent 85%);
+            --beam-top-right: radial-gradient(ellipse at top right, rgba(160, 205, 255, 0.85) 0%, rgba(70, 135, 235, 0.5) 40%, transparent 85%);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: #000000;
+            color: #d1d5db;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+        }
+        .beam-layer {
+            position: fixed; pointer-events: none; z-index: 1; opacity: 0;
+            transition: opacity 1.5s ease 0.5s;
+        }
+        .beam-layer.visible { opacity: 1; }
+        .beam-top-left {
+            top: -10%; left: -10%; width: 60vw; height: 80vh;
+            background: var(--beam-top-left); transform: rotate(20deg); filter: blur(60px);
+        }
+        .beam-top-right {
+            top: -10%; right: -10%; width: 60vw; height: 80vh;
+            background: var(--beam-top-right); transform: rotate(-20deg); filter: blur(60px);
+        }
+        .foreground { position: relative; z-index: 2; }
+
+        .glass-nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+            height: 68px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem;
+            background: rgba(10, 10, 10, 0.55);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 217, 255, 0.08);
+        }
+        .glass-nav:hover { background: rgba(10, 10, 10, 0.7); border-bottom-color: rgba(0, 217, 255, 0.4); }
+        .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; color: #fff; letter-spacing: -0.3px; }
+        .nav-logo .logo-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, #00d9ff, #3b82f6);
+            display: flex; align-items: center; justify-content: center;
+            color: #000; font-weight: 800; font-size: 16px;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        }
+        .nav-links-container { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; mask-image: linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%); }
+        .nav-links-container::-webkit-scrollbar { display: none; }
+        .nav-link-item {
+            display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: 40px;
+            font-size: 12.5px; font-weight: 500; color: #9ca3af; white-space: nowrap;
+            transition: all 0.3s ease; letter-spacing: -0.2px; background: transparent;
+            cursor: pointer; text-decoration: none;
+        }
+        .nav-link-item i { font-size: 12px; color: #4b5563; transition: color 0.3s; }
+        .nav-link-item:hover { color: #fff; background: rgba(255, 255, 255, 0.08); text-shadow: 0 0 12px rgba(0, 217, 255, 0.6); }
+        .nav-link-item:hover i { color: #00d9ff; }
+        .nav-link-item.active {
+            color: #fff; background: rgba(0, 217, 255, 0.15);
+            box-shadow: 0 0 25px rgba(0, 217, 255, 0.2); font-weight: 600;
+        }
+        .nav-link-item.active i { color: #00d9ff; }
+
+        .hamburger-btn { display: none; flex-direction: column; justify-content: center; align-items: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; gap: 5px; }
+        .hamburger-line { width: 20px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s ease; transform-origin: center; }
+        .hamburger-btn.open .hamburger-line:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger-btn.open .hamburger-line:nth-child(2) { opacity: 0; }
+        .hamburger-btn.open .hamburger-line:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+        .mobile-nav-panel { position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,0.9); backdrop-filter: blur(30px); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+        .mobile-nav-panel.open { opacity: 1; pointer-events: auto; }
+        .mobile-nav-link { font-size: 1.2rem; font-weight: 500; color: #9ca3af; padding: 10px 24px; border-radius: 30px; transition: all 0.25s; text-decoration: none; }
+        .mobile-nav-link:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        .mobile-nav-link.active { color: #00d9ff; font-weight: 600; }
+
+        .card-dashboard {
+            background: rgba(10, 15, 20, 0.7); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 20px;
+            transition: all 0.4s ease; transform-style: preserve-3d; perspective: 1000px;
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.1);
+        }
+        .card-dashboard:hover {
+            border-color: rgba(0, 217, 255, 0.5);
+            box-shadow: 0 0 60px rgba(0, 180, 255, 0.25), 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .title-gradient {
+            background: linear-gradient(180deg, #ffffff 0%, #a0c4ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .section-title {
+            font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px;
+            background: linear-gradient(180deg, #ffffff 0%, #7ab8ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: 0.75rem;
+        }
+        @media (max-width: 768px) { .section-title { font-size: 1.8rem; } }
+
+        .capsule-tag {
+            display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
+            border-radius: 9999px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px;
+            font-weight: 500; color: #9ca3af; transition: all 0.3s ease; cursor: pointer; white-space: nowrap;
+        }
+        .capsule-tag.active {
+            background: linear-gradient(135deg, #0077be, #00a3e0); border-color: transparent;
+            color: #fff; box-shadow: 0 0 20px rgba(0, 150, 220, 0.5);
+        }
+        .capsule-tag:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); color: #e5e7eb;
+        }
+        .content-img {
+            border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
+            max-width: 100%; height: auto; transition: transform 0.4s ease, box-shadow 0.4s ease;
+            transform-style: preserve-3d; will-change: transform;
+        }
+        .content-img:hover { box-shadow: 0 0 40px rgba(0, 217, 255, 0.3); }
+        .tilt-container { perspective: 1000px; transform-style: preserve-3d; display: inline-block; max-width: 100%; }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
+            border-radius: 9999px; background: linear-gradient(135deg, #0077be, #00a3e0);
+            color: #fff; font-weight: 600; font-size: 15px; border: none; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 4px 25px rgba(0, 119, 190, 0.5);
+        }
+        .btn-primary:hover { box-shadow: 0 8px 35px rgba(0, 180, 220, 0.7); transform: translateY(-2px); }
+        .fade-in-up { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+        .fade-in-up.visible { opacity: 1; transform: translateY(0); }
+        .table-dark { border-collapse: collapse; width: 100%; font-size: 13px; }
+        .table-dark th, .table-dark td { border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px 14px; text-align: left; }
+        .table-dark th { background: rgba(0, 217, 255, 0.05); color: #e5e7eb; font-weight: 600; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        @media (max-width: 1023px) {
+            .glass-nav { padding: 0 1rem; } .nav-links-container { display: none; } .hamburger-btn { display: flex; }
+            .beam-top-left, .beam-top-right { width: 80vw; height: 50vh; }
+        }
+    </style>
+</head>
+<body class="dark">
+<div class="beam-layer beam-top-left" id="beamLeft"></div>
+<div class="beam-layer beam-top-right" id="beamRight"></div>
+<canvas id="particle-canvas"></canvas>
+
+<header class="glass-nav">
+    <div class="nav-logo"><div class="logo-icon">V</div><span>Veracity <span class="text-gray-400 font-normal text-sm ml-1">China</span></span></div>
+    <nav class="nav-links-container" id="topNavLinks">
+        <a href="#section-overview" class="nav-link-item active" data-section="section-overview"><i class="fas fa-home"></i>Overview</a>
+        <a href="#section-dwb" class="nav-link-item" data-section="section-dwb"><i class="fas fa-database"></i>Data Workbench</a>
+        <a href="#section-dc" class="nav-link-item" data-section="section-dc"><i class="fas fa-shopping-cart"></i>Digital Commerce</a>
+        <a href="#section-an" class="nav-link-item" data-section="section-an"><i class="fas fa-network-wired"></i>App Network</a>
+        <a href="#section-vpa" class="nav-link-item" data-section="section-vpa"><i class="fas fa-chart-line"></i>VPA</a>
+        <a href="#section-ec" class="nav-link-item" data-section="section-ec"><i class="fas fa-leaf"></i>Emissions</a>
+        <a href="#section-ovd" class="nav-link-item" data-section="section-ovd"><i class="fas fa-ship"></i>OVD</a>
+        <a href="#section-ods" class="nav-link-item" data-section="section-ods"><i class="fas fa-water"></i>ODS</a>
+        <a href="#section-ops" class="nav-link-item" data-section="section-ops"><i class="fas fa-headset"></i>Operation</a>
+        <a href="#section-test" class="nav-link-item" data-section="section-test"><i class="fas fa-flask"></i>Test</a>
+        <a href="#section-partner" class="nav-link-item" data-section="section-partner"><i class="fas fa-handshake"></i>Partners</a>
+        <a href="#section-colleague" class="nav-link-item" data-section="section-colleague"><i class="fas fa-user-circle"></i>Allen</a>
+        <a href="#section-life" class="nav-link-item" data-section="section-life"><i class="fas fa-camera-retro"></i>Life</a>
+    </nav>
+    <button class="hamburger-btn" id="hamburgerBtn"><span class="hamburger-line"></span><span class="hamburger-line"></span><span class="hamburger-line"></span></button>
+</header>
+<div class="mobile-nav-panel" id="mobileNavPanel">
+    <a href="#section-overview" class="mobile-nav-link active" data-section="section-overview">Overview</a>
+    <a href="#section-dwb" class="mobile-nav-link" data-section="section-dwb">Data Workbench</a>
+    <a href="#section-dc" class="mobile-nav-link" data-section="section-dc">Digital Commerce</a>
+    <a href="#section-an" class="mobile-nav-link" data-section="section-an">Application Network</a>
+    <a href="#section-vpa" class="mobile-nav-link" data-section="section-vpa">VPA</a>
+    <a href="#section-ec" class="mobile-nav-link" data-section="section-ec">Emissions Connect</a>
+    <a href="#section-ovd" class="mobile-nav-link" data-section="section-ovd">OVD</a>
+    <a href="#section-ods" class="mobile-nav-link" data-section="section-ods">ODS</a>
+    <a href="#section-ops" class="mobile-nav-link" data-section="section-ops">Operation</a>
+    <a href="#section-test" class="mobile-nav-link" data-section="section-test">Test</a>
+    <a href="#section-partner" class="mobile-nav-link" data-section="section-partner">Partner Program</a>
+    <a href="#section-colleague" class="mobile-nav-link" data-section="section-colleague">Meet Allen</a>
+    <a href="#section-life" class="mobile-nav-link" data-section="section-life">Life in Shanghai</a>
+</div>
+
+<main class="foreground pt-20 lg:pt-24">
+    <div class="max-w-dashboard mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+        <div class="text-center mb-16 lg:mb-20">
+            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight title-gradient mb-8">Engineering China 2026 Q1 Newsletter</h1>
+            <div class="fade-in-up flex justify-center"><a href="#section-overview" class="btn-primary text-lg px-10 py-4"><i class="fas fa-rocket text-sm"></i> Explore Insights</a></div>
+        </div>
+
+        <!-- 1. Overview -->
+        <section id="section-overview" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Overview</h2>
+            <div class="text-gray-400 leading-relaxed space-y-3 max-w-none">
+                <p>In Q1 2026, Engineering China advanced Veracity's strategic growth through regulatory-focused platform innovation, AI-powered capability enhancement, cross-regional strategic alignment, and unwavering operational excellence—delivering impactful milestones across all core business areas and strengthening team cohesion for our 2026 journey.</p>
+                <p><strong class="text-cyan-300">Data Workbench</strong> completed front-end modernization... <strong class="text-cyan-300">Digital Commerce</strong> upgraded Marketplace security... <strong class="text-cyan-300">Application Network</strong> rolled out AI chat... <strong class="text-cyan-300">VPA</strong> elevated user experience... <strong class="text-cyan-300">Emissions Connect</strong> UK ETS compliance... <strong class="text-cyan-300">OVD</strong> hardened DWH... <strong class="text-cyan-300">ODS</strong> MASTERv2... <strong class="text-cyan-300">Operations</strong> AI assistant... <strong class="text-cyan-300">Test</strong> high-quality releases... <strong class="text-cyan-300">Partner Program</strong> expanded ecosystem.</p>
+                <p>Culturally, we welcomed <strong class="text-white">Zhang, Xiao Lu Allen</strong>, leadership visits, <strong class="text-white">OVD workshop</strong>, VPA planning, and the <strong class="text-white">VAC town hall</strong>. The Veracity 2026 Annual Dinner celebrated four 10-Year Service Awards.</p>
+            </div>
+            <div class="tilt-container mt-5"><img src="media/image1.jpg" alt="Veracity Banner" class="content-img tilt-element" loading="lazy"></div>
+        </section>
+
+        <!-- 2. Data Workbench -->
+        <section id="section-dwb" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Data Workbench</h2>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button class="capsule-tag active" data-tab="dwb-eng">Engineering Delivery</button>
+                <button class="capsule-tag" data-tab="dwb-prod">Product Highlights</button>
+                <button class="capsule-tag" data-tab="dwb-viz">Visualization Pilot</button>
+                <button class="capsule-tag" data-tab="dwb-ovd">OVD Egest & BYOD</button>
+                <button class="capsule-tag" data-tab="dwb-test">Quality Engineering</button>
+            </div>
+            <div class="tab-panel active" id="dwb-eng"><div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">Request Data Template & Web</h4><ul class="list-disc pl-5 space-y-1"><li>Bulk select, grouped requests, dynamic dates, upload validation.</li></ul><h4 class="text-white font-semibold">Share Request Management</h4><ul class="list-disc pl-5 space-y-1"><li>Email notifications, Proposed/Abandoned statuses, guest queries.</li></ul><h4 class="text-white font-semibold">Infrastructure & APIs</h4><ul class="list-disc pl-5 space-y-1"><li>Facade API, VUI v4.0.0, Swagger updates, gateway routing.</li></ul></div></div>
+            <div class="tab-panel hidden" id="dwb-prod"><div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">Request for Sharing</h4><p>Structured data requests with Poseidon Principles & Sea Cargo Charter templates.</p><div class="tilt-container"><img src="media/image2.jpg" alt="Sharing concept" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image3.jpg" alt="Workflow" class="content-img tilt-element" loading="lazy"></div><h4 class="text-white font-semibold">Semantic Model Builder</h4><p>Reusable reports, dashboards, and AI-ready insights.</p><div class="tilt-container"><img src="media/image4.jpg" alt="Model Builder" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image5.jpg" alt="Model view" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="dwb-viz"><div class="text-gray-400 space-y-3"><p>Pilot started Dec 2025. Data model API/UI finished. Report UI in progress. On hold from Mar 16.</p><div class="tilt-container"><img src="media/image6.jpg" alt="Pilot status" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image7.jpg" alt="Pilot UI" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image8.jpg" alt="Pilot details" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="dwb-ovd"><div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">OVD Egest Integration</h4><p>Seamless integration. Pipeline copies from Azure SQL. Distribution released.</p><div class="tilt-container"><img src="media/image9.jpg" alt="OVD Egest" class="content-img tilt-element" loading="lazy"></div><h4 class="text-white font-semibold">BYOD Modernization</h4><p>Migration to Databricks completed. Unity Catalog per workspace.</p><div class="tilt-container"><img src="media/image10.jpg" alt="BYOD" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="dwb-test"><div class="text-gray-400 space-y-3"><p>Handled 15 of 35 releases. AI testing prototype developed.</p><div class="tilt-container"><img src="media/image11.jpg" alt="Release stats" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image12.jpg" alt="Test details" class="content-img tilt-element" loading="lazy"></div></div></div>
+        </section>
+
+        <!-- 3. Digital Commerce -->
+        <section id="section-dc" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Digital Commerce</h2>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button class="capsule-tag active" data-tab="dc-sec">Security</button>
+                <button class="capsule-tag" data-tab="dc-sub">My Subscriptions</button>
+                <button class="capsule-tag" data-tab="dc-mp">Marketplace</button>
+                <button class="capsule-tag" data-tab="dc-sf">Salesforce</button>
+            </div>
+            <div class="tab-panel active" id="dc-sec"><div class="tilt-container"><img src="media/image13.jpg" alt="Veracode" class="content-img tilt-element" loading="lazy"></div></div>
+            <div class="tab-panel hidden" id="dc-sub"><p class="text-gray-400">Dynamic nonce for CSP and Onetrust upgrade.</p></div>
+            <div class="tab-panel hidden" id="dc-mp"><div class="text-gray-400"><ol class="list-decimal pl-5 space-y-1"><li>Scalable product configurations.</li><li>PDF quote download.</li><li>Azure Key Vault expiration.</li><li>Entitlement API.</li></ol></div></div>
+            <div class="tab-panel hidden" id="dc-sf"><div class="text-gray-400"><p>New Salesforce auth protocol. Entitlement API integration.</p></div></div>
+        </section>
+
+        <!-- 4. Application Network -->
+        <section id="section-an" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Application Network</h2>
+            <div class="text-gray-400"><ol class="list-decimal pl-5 space-y-2"><li><strong class="text-cyan-300">MyServices</strong> – AI chat box deployed to Test.</li><li><strong class="text-cyan-300">GenAI API</strong> – Context compaction enhancements.</li><li><strong class="text-cyan-300">V3 Abstraction Layer</strong> – Deployed to Production.</li><li><strong class="text-cyan-300">V3 Infrastructure</strong> – Domain switching completed.</li><li><strong class="text-cyan-300">MDM Integration</strong> – Azure Function for sync messages.</li><li><strong class="text-cyan-300">Operation Automation AI</strong> – Initial investigation.</li><li><strong class="text-cyan-300">MyServices Releases</strong> – Two hotfixes delivered.</li><li><strong class="text-cyan-300">Cross-Team Support</strong> – Assisted SmartIT cases.</li></ol></div>
+        </section>
+
+        <!-- 5. VPA -->
+        <section id="section-vpa" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">VPA</h2>
+            <div class="flex flex-wrap gap-2 mb-6"><button class="capsule-tag active" data-tab="vpa-fe">Front-End</button><button class="capsule-tag" data-tab="vpa-be">Back-End</button></div>
+            <div class="tab-panel active" id="vpa-fe"><div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">EC Dashboard Refresh</h4><div class="tilt-container"><img src="media/image14.jpg" alt="EC Dashboard" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image15.jpg" alt="Sales Report" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image16.jpg" alt="ARR" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="vpa-be"><div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">Platform Upgrades</h4><ul class="list-disc pl-5"><li>Databricks Premium, Eloqua OAuth2.</li></ul><h4 class="text-white font-semibold">ES Leads AI</h4><p>Full deployment for MAM/KAM.</p></div></div>
+        </section>
+
+        <!-- 6. Emissions Connect -->
+        <section id="section-ec" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Emissions Connect</h2>
+            <div class="flex flex-wrap gap-2 mb-6"><button class="capsule-tag active" data-tab="ec-uk">UK ETS Regulation</button><button class="capsule-tag" data-tab="ec-nav">Navigation</button><button class="capsule-tag" data-tab="ec-map">Map Visualization</button><button class="capsule-tag" data-tab="ec-data">Data Completeness</button></div>
+            <div class="tab-panel active" id="ec-uk"><div class="text-gray-400 space-y-3"><p>UK ETS compliance for vessels ≥5000 GT. Biofuel & route deduction rules.</p><div class="tilt-container"><img src="media/image17.jpg" alt="UK ETS" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image18.jpg" alt="Deduction" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="ec-nav"><div class="text-gray-400"><p>Refined left-hand menu with one-click minimize/maximize.</p><div class="tilt-container"><img src="media/image19.jpg" alt="Navigation" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="ec-map"><div class="text-gray-400 space-y-3"><p>AIS distance, port shapes, quality indicators on map.</p><div class="tilt-container"><img src="media/image20.jpg" alt="AIS" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image21.jpg" alt="Ports" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image22.jpg" alt="Map quality" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="ec-data"><div class="text-gray-400 space-y-3"><p>Fleet and vessel monitoring with data quality timeline.</p><div class="tilt-container"><img src="media/image23.jpg" alt="Fleet icon" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image24.jpg" alt="Fleet monitoring" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image25.jpg" alt="Vessel timeline" class="content-img tilt-element" loading="lazy"></div></div></div>
+        </section>
+
+        <!-- 7. OVD -->
+        <section id="section-ovd" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">OVD</h2>
+            <div class="flex flex-wrap gap-2 mb-6"><button class="capsule-tag active" data-tab="ovd-dwh">DWH</button><button class="capsule-tag" data-tab="ovd-web">Web</button><button class="capsule-tag" data-tab="ovd-dqe">DQE</button><button class="capsule-tag" data-tab="ovd-biz">Business Promotion</button></div>
+            <div class="tab-panel active" id="ovd-dwh"><div class="text-gray-400"><ul class="list-disc pl-5 space-y-1"><li>Robust egest workflow, limited data push, UK ETS enrichment.</li></ul></div></div>
+            <div class="tab-panel hidden" id="ovd-web"><div class="text-gray-400 space-y-3"><p>VEC adaptation, document workflows, data quality UI.</p><div class="tilt-container"><img src="media/image26.jpg" alt="Document" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image27.jpg" alt="Data quality" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="ovd-dqe"><div class="text-gray-400"><p>Scope-aware checks, VEC/VLV alignment, clearer diagnostics.</p></div></div>
+            <div class="tab-panel hidden" id="ovd-biz"><div class="text-gray-400 space-y-3"><ul class="list-disc pl-5"><li>Customer engagement, Jiangnan visit, 8 EC onboardings.</li></ul><div class="tilt-container"><img src="media/image28.jpg" alt="Jiangnan" class="content-img tilt-element" loading="lazy"></div></div></div>
+        </section>
+
+        <!-- 8. ODS -->
+        <section id="section-ods" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">ODS</h2>
+            <div class="text-gray-400 space-y-3"><p>Arctic Ship Traffic Data with MASTERv2, security updates, CX interviews, Azure cleanup.</p><div class="tilt-container"><img src="media/image29.jpg" alt="Arctic pipeline" class="content-img tilt-element" loading="lazy"></div></div>
+        </section>
+
+        <!-- 9. Operation -->
+        <section id="section-ops" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Operation</h2>
+            <div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">New Customer Support Experience</h4><p>Redesigned landing page with AI assistant.</p><h4 class="text-white font-semibold">Platform Stability</h4><p>Zero service disruptions. Standby-duty strengthened.</p><h4 class="text-white font-semibold">Secure Operations</h4><p>Blind XSS handled, 12-month security plan.</p><h4 class="text-white font-semibold">Customer Support</h4><p>743 requests resolved. 44% escalated to 3rd line.</p></div>
+        </section>
+
+        <!-- 10. Test -->
+        <section id="section-test" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Test</h2>
+            <div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">Testing Team Release Overview</h4><div class="overflow-x-auto"><table class="table-dark"><thead><tr><th>Project</th><th>#</th><th>Details</th></tr></thead><tbody><tr><td>DC – Salesforce</td><td>3</td><td>Auth protocol, Entitlement API</td></tr><tr><td>DC – Marketplace</td><td>5+4</td><td>Quote download, security</td></tr><tr><td>OVD Web</td><td>17</td><td>Schema validation, UI</td></tr><tr><td>DWH</td><td>6</td><td>UK ETS deduction, egest</td></tr><tr><td>DQE</td><td>9</td><td>VEC/VLV alignment</td></tr><tr><td>DWB</td><td>15</td><td>Visualization APIs, OpsAdmin</td></tr></tbody></table></div></div>
+        </section>
+
+        <!-- 11. Partner Program -->
+        <section id="section-partner" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Partner Program</h2>
+            <div class="text-gray-400 space-y-2"><p><strong class="text-cyan-300">1.</strong> New partnership with Ocean Right Marine (ORM), Qingdao. OVD integration completed.</p><p><strong class="text-cyan-300">2.</strong> Jiangnan Shipyard GHG management planning. OVD standards sharing visit.</p></div>
+        </section>
+
+        <!-- 12. Get to Know Your Colleague -->
+        <section id="section-colleague" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Get to Know Your Colleague</h2>
+            <div class="text-gray-400 space-y-3"><h4 class="text-white font-semibold">Zhang, Xiao Lu Allen</h4><p>Joined DNV in February 2026, backend developer in Data Workbench. Enjoys badminton and running.</p><div class="tilt-container"><img src="media/image30.jpg" alt="Allen Zhang" class="content-img tilt-element rounded-xl max-w-xs" loading="lazy"></div></div>
+        </section>
+
+        <!-- 13. Life in Shanghai -->
+        <section id="section-life" class="mb-12 scroll-mt-28 fade-in-up card-dashboard p-6 sm:p-8">
+            <h2 class="section-title">Life in Shanghai</h2>
+            <div class="flex flex-wrap gap-2 mb-6"><button class="capsule-tag active" data-tab="life-ovd">OVD Workshop</button><button class="capsule-tag" data-tab="life-tom">Tom Erik trip</button><button class="capsule-tag" data-tab="life-dinner">Annual Dinner</button></div>
+            <div class="tab-panel active" id="life-ovd"><div class="text-gray-400 space-y-3"><p>2-week workshop with Bjarte, Inger & Ashfaq. Suzhou gardens visit.</p><div class="tilt-container"><img src="media/image32.jpg" alt="Dinner" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image33.jpg" alt="Gardens" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image34.jpg" alt="Sports" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image35.jpg" alt="Team" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image36.jpg" alt="Activity" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image37.jpg" alt="Gathering" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image38.jpg" alt="Title" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image39.jpg" alt="Visit" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="life-tom"><div class="text-gray-400 space-y-3"><p>VAC Town Hall on responsible AI. CrossFit and cycling at Dianshan Lake.</p><div class="tilt-container"><img src="media/image40.jpg" alt="Town Hall" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image41.jpg" alt="Group" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image42.jpg" alt="Workshop" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image43.jpg" alt="Session" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image44.jpg" alt="Discussion" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image45.jpg" alt="CrossFit" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image46.jpg" alt="Cycling" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image47.jpg" alt="Group cycling" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image48.jpg" alt="Outdoor" class="content-img tilt-element" loading="lazy"></div></div></div>
+            <div class="tab-panel hidden" id="life-dinner"><div class="text-gray-400 space-y-3"><p>Annual dinner with AIRC team. 10-Year Awards to Reid, Eva, Aegean, Lina.</p><div class="tilt-container"><img src="media/image49.jpg" alt="Dinner 1" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image50.jpg" alt="Dinner 2" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image51.jpg" alt="Dinner 3" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image52.jpg" alt="Dinner 4" class="content-img tilt-element" loading="lazy"></div><div class="tilt-container"><img src="media/image53.jpg" alt="Dinner 5" class="content-img tilt-element" loading="lazy"></div></div></div>
+        </section>
+
+        <footer class="mt-16 pt-8 border-t border-white/8 text-center text-sm text-gray-500">
+            <p class="font-medium text-gray-300">Created by <strong class="text-white">Fei Yifan Arlin</strong></p>
+            <p><a href="mailto:yifan.arlin.fei@dnv.com" class="text-cyan-400 hover:underline">yifan.arlin.fei@dnv.com</a></p>
+            <p class="mt-2">&copy; 2026 Veracity by DNV. All rights reserved.</p>
+        </footer>
+    </div>
+</main>
+
+<script>
+    (function() {
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const COUNT = 140;
+        const mouse = { x: null, y: null, r: 140 };
+        function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        class P {
+            constructor() { this.x = Math.random() * w; this.y = Math.random() * h; this.vx = (Math.random() - 0.5) * 0.6; this.vy = (Math.random() - 0.5) * 0.6; this.r = Math.random() * 2.2 + 0.8; this.col = Math.random() > 0.5 ? '#00d9ff' : '#ffffff'; }
+            update() { if (mouse.x && mouse.y) { const dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx * dx + dy * dy); if (d < mouse.r) { const f = (mouse.r - d) / mouse.r; this.vx += dx * f * 0.02; this.vy += dy * f * 0.02; } } this.vx *= 0.99; this.vy *= 0.99; this.x += this.vx; this.y += this.vy; if (this.x < 0 || this.x > w) this.vx *= -1; if (this.y < 0 || this.y > h) this.vy *= -1; this.x = Math.max(0, Math.min(w, this.x)); this.y = Math.max(0, Math.min(h, this.y)); }
+            draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2); ctx.fillStyle = this.col; ctx.shadowBlur = 8; ctx.shadowColor = this.col; ctx.fill(); ctx.shadowBlur = 0; }
+        }
+        function init() { particles = Array.from({ length: COUNT }, () => new P()); } init(); window.addEventListener('resize', init);
+        function drawLines() { const max = 110; for (let i = 0; i < particles.length; i++) { for (let j = i + 1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < max) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(0,217,255,${0.15*(1-d/max)})`; ctx.lineWidth = 0.5; ctx.stroke(); } } } }
+        function animate() { ctx.clearRect(0, 0, w, h); particles.forEach(p => p.update()); drawLines(); particles.forEach(p => p.draw()); requestAnimationFrame(animate); } animate();
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }); window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+        setTimeout(() => { document.getElementById('beamLeft').classList.add('visible'); document.getElementById('beamRight').classList.add('visible'); }, 600);
+
+        const topLinks = document.querySelectorAll('#topNavLinks .nav-link-item');
+        const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+        const sections = document.querySelectorAll('[id^="section-"]');
+        const hamburger = document.getElementById('hamburgerBtn');
+        const mobilePanel = document.getElementById('mobileNavPanel');
+
+        function updateActiveNav() {
+            const sp = window.scrollY + 130;
+            let cur = null;
+            sections.forEach(s => { const t = s.offsetTop, b = t + s.offsetHeight; if (sp >= t && sp < b) cur = s.id; });
+            if (!cur && sections.length) cur = sections[sections.length - 1].id;
+            topLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-section') === cur));
+            mobileLinks.forEach(l => l.classList.toggle('active', l.getAttribute('data-section') === cur));
+        }
+        window.addEventListener('scroll', updateActiveNav, { passive: true }); updateActiveNav();
+
+        function scrollToSection(e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-section');
+            const target = document.getElementById(id);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (mobilePanel.classList.contains('open')) toggleMobileMenu();
+        }
+        topLinks.forEach(l => l.addEventListener('click', scrollToSection));
+        mobileLinks.forEach(l => l.addEventListener('click', scrollToSection));
+
+        function toggleMobileMenu() {
+            const isOpen = mobilePanel.classList.contains('open');
+            if (isOpen) { mobilePanel.classList.remove('open'); hamburger.classList.remove('open'); document.body.style.overflow = ''; }
+            else { mobilePanel.classList.add('open'); hamburger.classList.add('open'); document.body.style.overflow = 'hidden'; }
+        }
+        hamburger.addEventListener('click', toggleMobileMenu);
+        window.addEventListener('resize', () => { if (window.innerWidth >= 1024 && mobilePanel.classList.contains('open')) toggleMobileMenu(); });
+
+        document.querySelectorAll('.capsule-tag[data-tab]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                const tabs = parent.querySelectorAll('.capsule-tag[data-tab]');
+                const tid = this.getAttribute('data-tab');
+                const section = parent.closest('section');
+                const panels = section.querySelectorAll('.tab-panel');
+                tabs.forEach(t => t.classList.remove('active')); this.classList.add('active');
+                panels.forEach(p => p.classList.add('hidden'));
+                document.getElementById(tid)?.classList.remove('hidden');
+            });
+        });
+
+        document.querySelectorAll('.tilt-element').forEach(el => {
+            el.addEventListener('mousemove', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left, y = e.clientY - rect.top;
+                const cx = rect.width / 2, cy = rect.height / 2;
+                this.style.transform = `perspective(800px) rotateX(${((y-cy)/cy)*-8}deg) rotateY(${((x-cx)/cx)*8}deg) scale(1.03)`;
+                this.style.transition = 'transform 0.1s ease-out';
+            });
+            el.addEventListener('mouseleave', function() {
+                this.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale(1)';
+                this.style.transition = 'transform 0.5s ease';
+            });
+        });
+
+        const fadeEls = document.querySelectorAll('.fade-in-up');
+        const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } }); }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+        fadeEls.forEach(el => obs.observe(el));
+    })();
+</script>
+</body>
+</html>
